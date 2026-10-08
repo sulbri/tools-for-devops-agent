@@ -83,7 +83,9 @@ The `metadata` block with `author` and `version` fields is required. Initial ver
 - The rules live in `.github/scripts/skill_checks.py` as pure functions over an in-memory skill folder (`SkillTree` of `Entry(path, mode, data)`). `validate_skills.py` only reads Git objects, computes the merge base and reports. Keep rules out of the CLI so the conformance cases and unit tests exercise exactly what CI runs.
 - Every skill is checked on every PR, because skills on `main` are published as one set. Errors from any skill fail; warnings print only for skills the PR touches.
 - Skills are read from Git objects (`git ls-tree -r -z` plus `git cat-file --batch`), never the working tree, so modes are exact and a local run checks only committed changes.
-- Rule data lives in `.github/scripts/skill-rules/` and the check fails closed (exit 2) when a file there is malformed: `agent-types.json`, `vocabulary.json` (dimension values; unknown values only warn) and `conformance-cases.json`.
+- Rule data lives in `.github/scripts/skill-rules/` and the check fails closed (exit 2) when a file there is malformed: `agent-types.json`, `vocabulary.json` (dimension values; unknown values only warn), `published-files.json` (root names left out of the published set) and `conformance-cases.json`.
+- The extension allowlist is not duplicated: it is parsed from the `!*.<ext>` lines of `skills/.gitignore`, read from the merge base so a PR can't widen it for itself.
+- Secrets in test fixtures are built at runtime (`"AKIA" + ...`) or stored as base64 in the conformance cases, so no file in the repository contains a literal key or invisible character.
 - `conformance-cases.json` is a language-neutral contract: every tool that validates or publishes these skills must give each case's `expect` result. The script runs it before checking any skill and exits 2 on a mismatch. A rule change needs a matching case change in the same PR.
 - Exit codes: 0 pass (warnings allowed), 1 a rule broken, 2 could not run. Never report a 2 as the PR's fault.
 - PyYAML is the only dependency, pinned by every PyPI hash in `skill-rules/requirements.txt`; actions are pinned by commit SHA.
